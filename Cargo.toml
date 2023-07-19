@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "backend/reunion/canister_users",
+    "backend/reunion/management_canister",
+]

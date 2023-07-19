@@ -1,0 +1,71 @@
+type CanisterIdRecord = record { canister_id : principal };
+type CanisterStatusResponse = record {
+  status : CanisterStatusType;
+  memory_size : nat;
+  cycles : nat;
+  settings : DefiniteCanisterSettings;
+  idle_cycles_burned_per_day : nat;
+  module_hash : opt vec nat8;
+};
+type CanisterStatusType = variant { stopped; stopping; running };
+type CanistersState = record {
+  updated_at : nat;
+  created_canister : opt CanisterStatusResponse;
+  canister_id : principal;
+  description : opt text;
+  created_at : nat;
+  logo_url : opt text;
+  project_name : text;
+};
+type DefiniteCanisterSettings = record {
+  freezing_threshold : nat;
+  controllers : vec principal;
+  memory_allocation : nat;
+  compute_allocation : nat;
+};
+type InsertProjectArg = record {
+  freezing_threshold : opt nat;
+  with_extra_cycles : nat;
+  description : text;
+  logo_url : text;
+  project_name : text;
+  memory_allocation : opt nat;
+  compute_allocation : opt nat;
+};
+type RejectionCode = variant {
+  NoError;
+  CanisterError;
+  SysTransient;
+  DestinationInvalid;
+  Unknown;
+  SysFatal;
+  CanisterReject;
+};
+type Result = variant {
+  Ok : record { CanisterIdRecord };
+  Err : record { RejectionCode; text };
+};
+type Result_1 = variant {
+  Ok : record { CanistersState };
+  Err : record { RejectionCode; text };
+};
+type Result_2 = variant {
+  Ok : record { CanisterStatusResponse };
+  Err : record { RejectionCode; text };
+};
+service : {
+  arg_default : () -> ();
+  caller : () -> (principal) query;
+  execute_create_canister : (text) -> (Result);
+  execute_create_canister_with_extra_cycles : (InsertProjectArg) -> (Result);
+  execute_delete_canister : (principal) -> (Result_1);
+  execute_get_canister_status : (principal) -> (Result_2);
+  execute_install_code : (principal, vec nat8) -> (Result_2);
+  execute_main_methods : () -> ();
+  execute_start_canister : (principal) -> (Result_2);
+  execute_stop_canister : (principal) -> (Result_2);
+  get_canister_items : () -> (vec record { principal; CanistersState }) query;
+  get_canister_keys : () -> (vec principal) query;
+  get_canister_values : () -> (vec CanistersState) query;
+  get_canisters : (principal) -> (opt CanistersState) query;
+}

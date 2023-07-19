@@ -1,0 +1,28 @@
+type Result = variant { Ok : record { principal; User }; Err : text };
+type User = record {
+  id : principal;
+  homepage_url : opt text;
+  updated_at : nat;
+  user_name : text;
+  youtube_url : opt text;
+  self_introduction : opt text;
+  twitter_url : opt text;
+  created_at : nat;
+  display_name : text;
+  icon_url : text;
+  tiktok_url : opt text;
+  delete_flg : bool;
+};
+service : {
+  users_contains_key : (principal) -> (bool) query;
+  users_get : (principal) -> (opt User) query;
+  users_insert : (principal, User) -> (opt User);
+  users_is_empty : () -> (bool) query;
+  users_items : () -> (vec record { principal; User }) query;
+  users_keys : () -> (vec principal) query;
+  users_len : () -> (nat64) query;
+  users_registe_validation_check : (principal, User) -> (Result) query;
+  users_remove : (principal) -> (opt User);
+  users_update_validation_check : (principal, User) -> (Result) query;
+  users_values : () -> (vec User) query;
+}

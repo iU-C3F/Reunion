@@ -1,0 +1,49 @@
+{
+  "canisters": {
+    "canister_users": {
+      "type": "rust",
+      "package": "reunion_users",
+      "candid": "backend/reunion/canister_users/canister_users.did",
+      "declarations": {
+        "output": "src/declarations/canister_users",
+        "node_compatibility": true
+      }
+    },
+    "management_canister": {
+      "type": "rust",
+      "package": "reunion_management_canister",
+      "candid": "backend/reunion/management_canister/management_canister.did",
+      "declarations": {
+        "output": "src/declarations/management_canister",
+        "node_compatibility": true
+      }
+    },
+    "frontend": {
+      "dependencies": [
+        "canister_users",
+        "management_canister"
+      ],
+      "frontend": {
+        "entrypoint": "src/pages/index.tsx"
+      },
+      "build": "npm run build",
+      "source": [
+        "out"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
+}
