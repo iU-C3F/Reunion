@@ -6,13 +6,30 @@ import { Box, Button, Grid, Typography } from '@mui/material';
 import ProjectCardItem from 'ui/components/Projects/ProjectCardItem';
 import { useIntersection } from 'hooks/intersection';
 import { Project, Projects } from 'types/project';
-import { makeManagementCanisterActor } from 'ui/service/actor-locator';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { projectState, projectShowState } from 'states/setProjectsState';
 
+import { User } from "types/user";
+import { setUserStates } from "states/setUserStates";
+import { localStorageUserState } from "states/localstorage";
+import { sessionStorageUserState } from "states/sessionstorage";
+
+import { makeManagementCanisterActor } from 'ui/service/actor-locator';
+import { Identity } from "@dfinity/agent";
+import Auth from '../Auth';
+import { useAuth } from 'hooks/auth';
+
 // function for projects >>>
-export async function getProjects() {
-  const managementCanisterActor = makeManagementCanisterActor();
+export async function getProjects(identity: Identity) {
+  console.log("inner getProjects >>>>>>");
+  let managementCanisterActor = makeManagementCanisterActor(identity);
+  // if (isUser) {
+  //   console.log("inner if isUser:", isUser);
+  //   managementCanisterActor = makeManagementCanisterActor(isUser.identity as Identity);
+  // }
+  console.log("managementCanisterActor:", managementCanisterActor);
+  console.log("<<<<<< inner getProjects");
+
   const projects_result = await managementCanisterActor.get_canister_values();
   const projects: Projects = new Map(Object.entries(projects_result));
   return projects;
@@ -20,6 +37,7 @@ export async function getProjects() {
 // <<< function for projects
 
 export default function ProjectList() {
+  const { isAuthenticated, identity } = useAuth();
   // setting state >>>
   // state for projects >>>>>>
   const [isProjects, setProjects] = useRecoilState(projectState);
@@ -31,26 +49,61 @@ export default function ProjectList() {
   const [intersected, setIntersected] = useState<boolean>(true);
   const [showMore, setShowMore] = useState<boolean>(true);
   // <<<<<< state for intersection
+  // state for user >>>>>>
+  const [isClient, setIsClient] = useState(false);
+  const isLocalUser = useRecoilValue<User>(localStorageUserState);
+  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
+  const [isUser, setUser] = useState<User>();
+  const [isEnv, setEnv] = useState("");
+  // <<<<<< state for user
   // <<< setting state
 
   // effect for projects >>>
+  // useEffect(() => {
+  //   if (window) {
+  //     setShowMore(true);
+  //     getProjects(isUser)
+  //       .then((projects: Projects) => {
+  //         setProjects(projects)
+  //         if (Array.from(projects.values()).length > 20) {
+  //           setShowProjects(new Map(Array.from(projects.entries()).slice(0, 20)));
+  //         } else {
+  //           setShowMore(false);
+  //           setShowProjects(projects);
+  //         }
+  //       })
+  //       .catch((err: any) => console.log("getProjects error: ", err))
+  //   }
+  // }, [])
+  // <<< effect for projects
+
+  // effect for user >>>
   useEffect(() => {
+    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
     if (window) {
       setShowMore(true);
-      getProjects()
-        .then((projects: Projects) => {
-          setProjects(projects)
-          if (Array.from(projects.values()).length > 20) {
-            setShowProjects(new Map(Array.from(projects.entries()).slice(0, 20)));
-          } else {
-            setShowMore(false);
-            setShowProjects(projects);
-          }
-        })
-        .catch((err: any) => console.log("getProjects error: ", err))
+      console.log("isUser: ", isUser);
+      if (isAuthenticated && identity) {
+        getProjects(identity)
+          .then((projects: Projects) => {
+            setProjects(projects)
+            if (Array.from(projects.values()).length > 20) {
+              setShowProjects(new Map(Array.from(projects.entries()).slice(0, 20)));
+            } else {
+              setShowMore(false);
+              setShowProjects(projects);
+            }
+          })
+          .catch((err: any) => console.log("getProjects error: ", err))
+      }
     }
-  }, [])
-  // <<< effect for projects
+  }, [isClient, isUser, isLocalUser, isSessionUser, isEnv]);
+
+  useLayoutEffect(() => {
+    setIsClient(true);
+  }, []);
+  // <<< effect for user
+
 
   // >>> 最下段までスクロールしたらIC Projects のCardを追加で読み込むための処理
   useEffect(() => {
@@ -65,7 +118,7 @@ export default function ProjectList() {
 
   const onButtonClick = async () => {
     if (!isProjects || !isShowProjects) return;
-    getProjects()
+    getProjects(identity as Identity)
       .then((projects: Map<string, Project>) => {
         if (projects === isShowProjects) {
           setShowMore(false);

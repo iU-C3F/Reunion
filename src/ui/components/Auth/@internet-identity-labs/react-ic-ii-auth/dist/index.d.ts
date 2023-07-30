@@ -1,4 +1,4 @@
-import { Identity } from '@dfinity/agent';
+import type { Identity } from '@dfinity/agent';
 import { AuthClient, AuthClientLoginOptions } from '@dfinity/auth-client';
 import React from 'react';
 export * from './modal';

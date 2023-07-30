@@ -14,6 +14,7 @@ import { defaultTheme } from "ui/theme";
 import Layout from 'ui/components/Layout';
 import ColorModeContext from "states/colorModeContext";
 import createEmotionCache from '../ui/createEmotionCache';
+import { AuthProvider } from "hooks/auth";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -57,7 +58,9 @@ export default function MyApp({
         <ThemeProvider theme={theme}>
           <RecoilRoot>
             <Layout >
-              <Component {...pageProps} />
+              <AuthProvider>
+                <Component {...pageProps} />
+              </AuthProvider>
             </Layout>
           </RecoilRoot>
         </ThemeProvider>

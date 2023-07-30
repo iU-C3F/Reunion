@@ -9,14 +9,13 @@ import { setUserStates } from 'states/setUserStates';
 import { Box, Container, Grid, Stack, Theme, Typography } from '@mui/material';
 
 import Auth from 'ui/components/Auth';
-import ProTip from 'ui/components/ProTip';
-import Copyright from 'ui/components/Copyright';
 import { defaultTheme } from '../ui/theme';
-import { height, maxHeight } from '@mui/system';
+import { useAuth } from 'hooks/auth';
 
 const defaultIcon = "/Reunion10.png"
 
 export default function Home() {
+  const { login, identity, principal } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const isLocalUser = useRecoilValue<User>(localStorageUserState);
   const isSessionUser = useRecoilValue<User>(sessionStorageUserState);

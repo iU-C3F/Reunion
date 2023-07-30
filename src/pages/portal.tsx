@@ -14,10 +14,12 @@ import { sessionStorageUserState } from 'states/sessionstorage';
 
 import { User } from 'types/user';
 import { setUserStates } from 'states/setUserStates';
+import { useAuth } from 'hooks/auth';
 
 const Projects = dynamic(async () => await import('ui/components/Projects'), { ssr: false })
 
 export default function Hello() {
+  const { isAuthenticated } = useAuth();
 
   const [isClient, setIsClient] = useState(false);
   const isLocalUser = useRecoilValue<User>(localStorageUserState);
@@ -37,35 +39,31 @@ export default function Hello() {
 
   return (
     <Container maxWidth="lg">
-      {/* <Stack spacing={1}>
-        <ListItem>isLocalUser.principalID: {isLocalUser && isLocalUser.id ? String(isLocalUser.id) : null}</ListItem>
-        <ListItem>isLocalUser.isAuthenticated: {isLocalUser ? String(isLocalUser.isAuthenticated) : false}</ListItem>
-        <ListItem>isSessionUser.principalID: {isSessionUser && isSessionUser.id ? String(isSessionUser.id) : null}</ListItem>
-        <ListItem>isSessionUser.isAuthenticated: {isSessionUser ? String(isSessionUser.isAuthenticated) : false}</ListItem>
-      </Stack> */}
-      <Box
-        sx={{
-          my: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          margin: 10
-        }}
-      >
-        <Typography variant='h6'>
-          <strong>プロジェクトを作成しましょう！</strong>
-        </Typography>
-        <Typography variant="h6">
-          local環境ではCreate Canister ボタンを押下する前に以下のdfxコマンドを実行してmanagement_canisterにCycleを補充してください
-        </Typography>
-        <Typography variant="body1">
-          "dfx ledger fabricate-cycles --canister management_canister --cycles 500000000000000"
-        </Typography>
-        <Button href="/project/create" variant="contained" >
-          プロジェクトを作成
-        </Button>
-      </Box>
+      {isAuthenticated ? (
+        <Box
+          sx={{
+            my: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            margin: 10
+          }}
+        >
+          <Typography variant='h6'>
+            <strong>プロジェクトを作成しましょう！</strong>
+          </Typography>
+          <Typography variant="h6">
+            local環境ではCreate Canister ボタンを押下する前に以下のdfxコマンドを実行してmanagement_canisterにCycleを補充してください
+          </Typography>
+          <Typography variant="body1">
+            "dfx ledger fabricate-cycles --canister management_canister --cycles 500000000000000"
+          </Typography>
+          <Button href="/project/create" variant="contained" >
+            プロジェクトを作成
+          </Button>
+        </Box>
+      ) : ("")}
       <Projects />
     </Container>
   )

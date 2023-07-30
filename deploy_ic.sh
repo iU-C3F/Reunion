@@ -15,6 +15,7 @@ env_ids_json_path="./${canister_ids_dir}/${ENV}_canister_ids.json"
 # <<< settings
 
 function main () {
+  npm install
   if [ "$ENV" != "local" ];then
     cp ./envs/.env.$ENV .env.production
     # rootディレクトリにcanister_ids.jsonが存在する場合 >>>
@@ -41,13 +42,22 @@ function main () {
       # <<< 異なるファイルの場合
     fi
     # <<< rootディレクトリにcanister_ids.jsonが存在する場合は退避
+  else
+  echo "deploy internet_identity_div canister..."
+    export DFX_NETWORK=${ENV}
+    target_canister="internet_identity_div"
+    upper_case=$(echo $target_canister | tr 'a-z' 'A-Z')
+
+    dfx deploy $target_canister
+    dfx generate $target_canister
+    sed -i -e "s/${upper_case}_CANISTER_ID/NEXT_PUBLIC_${upper_case}_CANISTER_ID/" src/declarations/$target_canister/index.js
   fi
 
   bash ./backend/reunion/canister_users/create_cindidfile.sh
+  bash ./backend/reunion/management_canister/create_cindidfile.sh
   npm run build
 
   if [ "$ENV" = "local" ];then
-    cp ./envs/.env.local .env.development
     dfx identity use default
     dfx deploy
     npm run dev
