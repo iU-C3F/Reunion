@@ -8,16 +8,10 @@ import { Avatar, Box, Button, Container, Typography } from "@mui/material";
 import { InsertProjectForm } from "types/project";
 import { inputProjectState } from 'states/inputProjectState';
 
-import { User } from "types/user";
-import { setUserStates } from "states/setUserStates";
-import { localStorageUserState } from "states/localstorage";
-import { sessionStorageUserState } from "states/sessionstorage";
-
-import { useEffect, useLayoutEffect, useState } from "react";
-import { makeManagementCanisterActor } from '../../service/actor-locator';
-import { Identity } from "@dfinity/agent";
-import type { _SERVICE as managementCanister, Result } from "declarations/management_canister/management_canister.did";
 import { useAuth } from "hooks/auth";
+import { makeManagementCanisterActor } from 'ui/service/actor-locator';
+import { Identity } from "@dfinity/agent";
+
 
 function ConfirmForm() {
   const { identity } = useAuth();
@@ -47,20 +41,6 @@ function ConfirmForm() {
       </>
     );
   }
-
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
-
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isClient, isUser, isLocalUser, isSessionUser, isEnv]);
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
 
 
   let successMessage = '';
@@ -120,10 +100,11 @@ function ConfirmForm() {
     // =========================
 
     // backendキャニスターのインスタンスを取得
+    console.log("before makeManagementCanisterActor. identity: ", identity);
     const managementCanisterActor = await makeManagementCanisterActor(identity as Identity);
     console.log("managementCanisterActor: ", managementCanisterActor);
     // =========================
-    const insertResult = await managementCanisterActor.execute_create_canister_with_extra_cycles(insertProject) as Result;
+    const insertResult = await managementCanisterActor.execute_create_canister_with_extra_cycles(insertProject);
     console.log('inner function insertResult: ', insertResult);
     if (!insertResult.Err) {
       // プロジェクト作成に成功した場合

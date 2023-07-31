@@ -17,8 +17,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import { inputProjectForm } from 'types/project';
 import { inputProjectState } from 'states/inputProjectState';
 
-const regU128 = new RegExp(/^[0-340282366920938463463374607431768211455]$/);
-
 function CreateProjectForm() {
   const router = useRouter();
   const [input, setInput] = useRecoilState(inputProjectState);// 入力されたFormの情報を一時保存するState

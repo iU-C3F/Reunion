@@ -19,7 +19,8 @@ import { useAuth } from 'hooks/auth';
 const Projects = dynamic(async () => await import('ui/components/Projects'), { ssr: false })
 
 export default function Hello() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, principal } = useAuth();
+  console.log("principal:", principal?.toText());
 
   const [isClient, setIsClient] = useState(false);
   const isLocalUser = useRecoilValue<User>(localStorageUserState);

@@ -26,6 +26,8 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import { projectShowState, projectState } from "states/setProjectsState";
 import { canisterId___Candid_UI_canister, host } from "hooks/useCanister";
 import { handleChangeStatus, handleChangeFile } from "hooks/useCanister";
+import { useAuth } from "hooks/auth";
+import { Principal } from "@dfinity/principal";
 
 type Props = {
   index: Number;
@@ -33,6 +35,8 @@ type Props = {
 }
 
 function ProjectCardItem(props: Props): EmotionJSX.Element {
+  const { principal } = useAuth();
+
   // project data settings >>>
   const index = props.index as number;
   const project = props.project as Project;
@@ -140,7 +144,7 @@ function ProjectCardItem(props: Props): EmotionJSX.Element {
                 <ListItemText primary={String(isCandidUiURL)} sx={{ marginLeft: '4px' }} />
               </ListItem>
             </Box>
-            {isCandidUiURL.length <= 0 ? (
+            {isCanisterSettings && principal && (isCanisterSettings.controllers.filter(v => v.toString() === principal.toString()).length > 0) && isCandidUiURL.length <= 0 ? (
               <Button variant="contained" component="label" >
                 Upload
                 <input hidden accept=".wasm,.gz" multiple type="file" onChange={excuteHandleChangeFile} alt={project.canister_id.toString()} />
@@ -166,17 +170,19 @@ function ProjectCardItem(props: Props): EmotionJSX.Element {
                   <Typography variant="h6" >canister id: {project.canister_id.toText()}</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'row' }} >
                     <Typography variant="h6" px={2} sx={{ paddingLeft: '0px' }}>status: {isProjectStatus}</Typography>
-                    <Button
-                      className="change_project_status"
-                      variant="contained"
-                      disabled={false}
-                      value={project.canister_id.toText()}
-                      onClick={excuteHandleChangeStatus}
-                      color={isProjectStatus && isProjectStatus === 'running' ? "error" : "primary"}
-                      size="small"
-                    >
-                      {isChangeStatus}
-                    </Button>
+                    {isCanisterSettings && principal && (isCanisterSettings.controllers.filter(v => v.toString() === principal.toString()).length > 0) ? (
+                      <Button
+                        className="change_project_status"
+                        variant="contained"
+                        disabled={false}
+                        value={project.canister_id.toText()}
+                        onClick={excuteHandleChangeStatus}
+                        color={isProjectStatus && isProjectStatus === 'running' ? "error" : "primary"}
+                        size="small"
+                      >
+                        {isChangeStatus}
+                      </Button>
+                    ) : ("")}
                   </Box>
                   <Typography variant="h6" >memory_size: {String(created_canister.memory_size)}</Typography>
                   <Typography variant="h6" >cycles: {String(created_canister.cycles)}</Typography>

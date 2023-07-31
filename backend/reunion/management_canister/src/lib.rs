@@ -108,6 +108,8 @@ async fn execute_create_canister_with_extra_cycles(
     ));
 
     let first_setting = CanisterSettings {
+        // controller1: ic_cdk::id() -> id from management_canister.
+        // controller2: ic_cdk::api::caller() -> id from caller(Principal id of the logged-in user).
         controllers: Some(vec![ic_cdk::id(), ic_cdk::api::caller()]),
         compute_allocation: insert_project_arg.compute_allocation,
         memory_allocation: insert_project_arg.memory_allocation,
