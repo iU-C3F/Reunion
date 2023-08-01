@@ -28,6 +28,7 @@ import { canisterId___Candid_UI_canister, host } from "hooks/useCanister";
 import { handleChangeStatus, handleChangeFile } from "hooks/useCanister";
 import { useAuth } from "hooks/auth";
 import { Principal } from "@dfinity/principal";
+import { Identity } from "@dfinity/agent";
 
 type Props = {
   index: Number;
@@ -35,7 +36,7 @@ type Props = {
 }
 
 function ProjectCardItem(props: Props): EmotionJSX.Element {
-  const { principal } = useAuth();
+  const { principal, identity } = useAuth();
 
   // project data settings >>>
   const index = props.index as number;
@@ -83,11 +84,11 @@ function ProjectCardItem(props: Props): EmotionJSX.Element {
   const [isFileName, setFileName] = useState();
 
   const excuteHandleChangeFile = (e_handle: any) => {
-    handleChangeFile(e_handle, setFile, setFileName, setProjects);
+    handleChangeFile(e_handle, setFile, setFileName, setProjects, identity as Identity);
   }
 
   const excuteHandleChangeStatus = (e_handle: any) => {
-    handleChangeStatus(e_handle, setProjects);
+    handleChangeStatus(e_handle, setProjects, identity as Identity);
   }
   // <<< managing project state
 

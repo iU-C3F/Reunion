@@ -244,6 +244,21 @@ async fn execute_start_canister(
         ));
     }
 
+    // >>> Check if the caller is included in the canister controllers.
+    let created_canister_controllers = project_canister
+        .created_canister
+        .unwrap()
+        .settings
+        .controllers;
+
+    if !created_canister_controllers.contains(&ic_cdk::api::caller()) {
+        return Err((
+            RejectionCode::CanisterReject,
+            "Not a canister controller.".to_string(),
+        ));
+    }
+    // <<< Check if the caller is included in the canister controllers.
+
     let arg = CanisterIdRecord { canister_id };
     ic_cdk::api::print(format!("CanisterIdRecord arg: {:?}", arg));
 
@@ -306,6 +321,21 @@ async fn execute_stop_canister(
             "canister id not found.".to_string(),
         ));
     }
+
+    // >>> Check if the caller is included in the canister controllers.
+    let created_canister_controllers = project_canister
+        .created_canister
+        .unwrap()
+        .settings
+        .controllers;
+
+    if !created_canister_controllers.contains(&ic_cdk::api::caller()) {
+        return Err((
+            RejectionCode::CanisterReject,
+            "Not a canister controller.".to_string(),
+        ));
+    }
+    // <<< Check if the caller is included in the canister controllers.
 
     let arg = CanisterIdRecord { canister_id };
     ic_cdk::api::print(format!("CanisterIdRecord arg: {:?}", arg));
@@ -385,12 +415,28 @@ async fn execute_install_code(
         }
         None => false,
     };
+
     if !canister_exist {
         return Err((
             RejectionCode::CanisterReject,
             "canister id not found.".to_string(),
         ));
     }
+
+    // >>> Check if the caller is included in the canister controllers.
+    let created_canister_controllers = project_canister
+        .created_canister
+        .unwrap()
+        .settings
+        .controllers;
+
+    if !created_canister_controllers.contains(&ic_cdk::api::caller()) {
+        return Err((
+            RejectionCode::CanisterReject,
+            "Not a canister controller.".to_string(),
+        ));
+    }
+    // <<< Check if the caller is included in the canister controllers.
 
     let install_arg = InstallCodeArgument {
         mode: CanisterInstallMode::Install,

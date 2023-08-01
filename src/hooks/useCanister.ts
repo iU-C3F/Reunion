@@ -2,6 +2,7 @@ import { toast } from "react-hot-toast";
 import { Principal } from "@dfinity/principal";
 import { Projects } from "types/project";
 import { makeManagementCanisterActor } from "ui/service/actor-locator";
+import { Identity } from "@dfinity/agent";
 
 export const canisterId_users = process.env.NEXT_PUBLIC_CANISTER_USERS_CANISTER_ID as String;
 export const canisterId_management_canister = process.env.NEXT_PUBLIC_MANAGEMENT_CANISTER_CANISTER_ID as String;
@@ -37,7 +38,7 @@ export async function getProjectsPlane() {
 
 // <<< start or stop canister
 // const [isProjects, setProjects] = useRecoilState(projectState);
-export function handleChangeStatus(e_handle: any, setProjects: any) {
+export function handleChangeStatus(e_handle: any, setProjects: any, identity: Identity) {
   const successMessage = 'ステータスを変更しました😁';
   const notifySuccess = () => toast.success(successMessage, { position: "top-right", duration: 3000 });
   let notifyError = () => toast.error('プロジェクトリストの更新に失敗しました😢\n画面を再読み込みしてください', { position: "top-right", duration: 3000 });
@@ -45,7 +46,7 @@ export function handleChangeStatus(e_handle: any, setProjects: any) {
   e_handle.target.disabled = true;
 
   if (e_handle.target.innerText.indexOf("START") !== -1) {
-    const managementCanisterActor = makeManagementCanisterActor();
+    const managementCanisterActor = makeManagementCanisterActor(identity);
     managementCanisterActor.execute_start_canister(principalID)
       .then((result: any) => {
         if (result.Err) {
@@ -66,7 +67,7 @@ export function handleChangeStatus(e_handle: any, setProjects: any) {
       });
 
   } else if (e_handle.target.innerText.indexOf("STOP") !== -1) {
-    const managementCanisterActor = makeManagementCanisterActor();
+    const managementCanisterActor = makeManagementCanisterActor(identity);
     managementCanisterActor.execute_stop_canister(principalID)
       .then((result: any) => {
         if (result.Err) {
@@ -93,7 +94,7 @@ export function handleChangeStatus(e_handle: any, setProjects: any) {
 // for wasm file upload >>>
 
 // const [isProjects, setProjects] = useRecoilState(projectState);
-export function handleChangeFile(e_handle: any, setFile: any, setFileName: any, setProjects: any) {
+export function handleChangeFile(e_handle: any, setFile: any, setFileName: any, setProjects: any, identity: Identity) {
   const principalID = Principal.fromText(e_handle.target.alt);
   if (e_handle.target.files) {
     console.log(e_handle.target.files[0].name);
@@ -102,7 +103,7 @@ export function handleChangeFile(e_handle: any, setFile: any, setFileName: any, 
     const fileReader = new FileReader();
     fileReader.onload = (e_fileReader) => {
       if (e_fileReader.target) {
-        const managementCanisterActor = makeManagementCanisterActor();
+        const managementCanisterActor = makeManagementCanisterActor(identity);
         const uploadBlob = new Uint8Array(e_fileReader.target.result as ArrayBuffer);
         console.log("uploadBlob.length: ", uploadBlob.length);
         managementCanisterActor.execute_install_code(principalID, uploadBlob)
