@@ -1,10 +1,8 @@
-import { Identity } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
 
 export type UserContextType = User | null | undefined;
 
 export type User = {
-  identity?: Identity,
   id?: string | Principal,
   iconUrl?: string,
   displayName?: string,

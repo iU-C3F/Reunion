@@ -1,42 +1,25 @@
-import { useEffect, useLayoutEffect, useState } from "react";
-import { useRecoilValue } from "recoil";
-import { localStorageUserState } from "states/localstorage";
-import { sessionStorageUserState } from "states/sessionstorage";
-import { User } from "types/user";
-import { setUserStates } from "states/setUserStates";
 import Auth from "ui/components/Auth";
 import {
   Container,
   Typography,
   Grid,
-  TextField,
   Box,
   FormControl,
   OutlinedInput,
   InputAdornment
 } from "@mui/material";
+
+import { useAuth } from "hooks/auth";
+
 import dynamic from "next/dynamic";
 const Transfer = dynamic(async () => await import('../ui/components/Transfer'), { ssr: false });
 
 const transferToUser = () => {
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
-  () => (setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv));
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isLocalUser, isSessionUser]);
+  const { isAuthenticated } = useAuth();
 
   return (
     <>
-      {isLocalUser && isLocalUser.isAuthenticated || isSessionUser && isSessionUser.isAuthenticated ? (
+      {isAuthenticated ? (
         <Container maxWidth="sm">
           <Grid container spacing={2}>
             <Grid item xs={12}>※実装優先度は低い。</Grid>

@@ -14,6 +14,9 @@ export const defaultTheme = {
       main: red.A400,
     },
   },
+  text: {
+    primary: '#121212',
+  },
   typography: {
     fontFamily: [
       'hiragino',

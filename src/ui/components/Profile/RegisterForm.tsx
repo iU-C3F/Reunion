@@ -16,6 +16,7 @@ import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import { inputProfileForm } from 'types/user';
 import { inputProfileState } from 'states/inputProfileState';
+import { makeUsersActor } from "ui/service/actor-locator";
 
 function RegisterFrom() {
   const router = useRouter();
@@ -89,6 +90,14 @@ function RegisterFrom() {
     const iconUrlElement = document.getElementById('iconURL') as HTMLInputElement | null;
     if (iconUrlElement) setIconUrl(iconUrlElement.value);
     setOpen(false);
+  }
+  // <<< ここまで
+
+  // userNameの重複チェック
+  async function checkUserName(userName: string) {
+    const usersActor = makeUsersActor();
+    const checkUserNmameResult = await usersActor.users_user_name_duplicate_check(userName) as boolean;
+    return checkUserNmameResult;
   }
 
   return (
@@ -264,6 +273,9 @@ function RegisterFrom() {
                 maxLength: {
                   value: 50,
                   message: "50文字以内で入力してください",
+                },
+                validate: {
+                  userNameDuplicateCheck: async (v) => !await checkUserName(v) || 'このユーザー名は既に使用されています',
                 },
               }}
               render={({

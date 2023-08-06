@@ -170,6 +170,12 @@ fn users_registe_validation_check(
         ));
     }
 
+    // user_name duplication check
+    let user_name_check_bool = user_name_duplicate_check(value.user_name.clone());
+    if user_name_check_bool {
+        error_message.push_str("user_name is already in use. ");
+    }
+
     if error_message == String::new() {
         Ok((key, value))
     } else {
@@ -276,6 +282,29 @@ fn values() -> Vec<StableBTreeMapUsersValueType> {
 fn users_values() -> Vec<StableBTreeMapUsersValueType> {
     values()
 }
+// ===========================================
+
+// user_name duplicate check
+fn user_name_duplicate_check(user_name: String) -> bool {
+    let mut result = false;
+
+    let values = values();
+    for value in values {
+        if value.0.user_name == user_name {
+            result = true;
+            break;
+        }
+    }
+
+    result
+}
+
+#[ic_cdk_macros::query]
+#[candid::candid_method(query)]
+fn users_user_name_duplicate_check(user_name: String) -> bool {
+    user_name_duplicate_check(user_name)
+}
+
 // ===========================================
 
 // Generate candid file automatically

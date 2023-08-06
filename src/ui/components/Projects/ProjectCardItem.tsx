@@ -138,7 +138,7 @@ function ProjectCardItem(props: Props): EmotionJSX.Element {
               <ListItem
                 className="candid_url"
                 key="candid_url"
-                component={Link}
+                component={isCandidUiURL.indexOf("http") !== -1 ? Link : "div"}
                 target='_blank'
                 href={String(isCandidUiURL)}
               >

@@ -67,6 +67,7 @@ function EditFrom() {
   // modalの設定
   const [isIconUrl, setIconUrl] = useState<string>();
   const [open, setOpen] = useState<boolean>(false);
+  const [openError, setOpenError] = useState<boolean>(false);
   const customStyles = {
     position: "absolute",
     top: "50%",
@@ -81,19 +82,47 @@ function EditFrom() {
     borderRadius: "10px",
   };
   useEffect(() => {
+    if (inputProfileData.userName === '') {
+      console.log('プロフィールデータの取得に失敗しました😢\n再度「編集」ボタンよりお試しください。');
+      setOpenError(true);
+      setTimeout(function () {
+        router.back();
+      }, 3 * 1000);
+    }
     if (inputProfileData.iconUrl !== '') {
       setIconUrl(inputProfileData.iconUrl)
     }
   }, []);
+
   function setIcon() {
     const iconUrlElement = document.getElementById('iconURL') as HTMLInputElement | null;
     if (iconUrlElement) setIconUrl(iconUrlElement.value);
     setOpen(false);
   }
 
+  function handleClose() {
+    setOpenError(false);
+  }
+
   return (
     <>
       <Container maxWidth="sm" sx={{ direction: "column", flex: '1' }}>
+        <Modal
+          open={openError}
+          onClose={handleClose}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box sx={{ ...customStyles, color: 'red;', border: "5px solid red;", }}>
+            <Typography id="modal-error-title" variant="h6" component="h2">
+              情報取得エラー
+            </Typography>
+            <Typography id="modal-error-description" sx={{ mt: 2 }}>
+              プロフィールデータの取得に失敗しました😢
+              再度プロフィール画面の「編集」ボタンよりお試しください。
+            </Typography>
+          </Box>
+        </Modal>
         <Box
           sx={{
             my: 4,
@@ -258,6 +287,7 @@ function EditFrom() {
                 fieldState: { invalid, isTouched, isDirty, error },
               }) => (
                 <TextField
+                  name="userName"
                   label="ユーザー名(変更不可)"
                   placeholder="reunion-bob-1234"
                   required

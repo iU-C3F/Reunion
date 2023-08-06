@@ -20,7 +20,7 @@ const host = process.env.NEXT_PUBLIC_IC_HOST as string;
 // users actor 
 import {
   createActor as createUsersActor
-} from "../../declarations/canister_users"
+} from "declarations/canister_users"
 
 export function makeUsersActor(canisterId: String = canisterId_users) {
   return makeActor(canisterId, createUsersActor)
@@ -48,8 +48,6 @@ export const makeActor = (canisterId: String, createActor: any, identity?: Ident
     host: host,
   }
   if (identity) {
-    // console.log((identity as Identity).getPrincipal().toText());
-    console.log('inner actor-locator. identity: ', identity);
     agentOptions['identity'] = identity;
   }
   return createActor(canisterId, {

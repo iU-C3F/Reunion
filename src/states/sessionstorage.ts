@@ -18,7 +18,6 @@ const sessionStorageUserEffect = (key: string) => ({ setSelf, onSet }: any) => {
 export const sessionStorageUserState = atom<User>({
   key: "isSessionlUser",
   default: {
-    identity: undefined,
     id: undefined,
     iconUrl: undefined,
     displayName: undefined,

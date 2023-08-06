@@ -1,9 +1,3 @@
-import { useEffect, useLayoutEffect, useState } from "react";
-import { useRecoilValue } from "recoil";
-import { localStorageUserState } from "states/localstorage";
-import { sessionStorageUserState } from "states/sessionstorage";
-import { User } from "types/user";
-import { setUserStates } from "states/setUserStates";
 import Auth from "ui/components/Auth";
 import {
   Container,
@@ -15,32 +9,16 @@ import {
   FormControlLabel,
   Radio,
   InputAdornment,
-  FormControl,
   Button
 } from "@mui/material";
+import { useAuth } from "hooks/auth";
 
 const conditionalTransfer = () => {
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
-  () => (setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv));
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isLocalUser, isSessionUser]);
-
-  // const [value5, setValue5] = useState('hashtag');
-  // const [value6, setValue6] = useState('good');
+  const { isAuthenticated } = useAuth();
 
   return (
     <>
-      {isLocalUser && isLocalUser.isAuthenticated || isSessionUser && isSessionUser.isAuthenticated ? (
+      {isAuthenticated ? (
         <>
           <Typography textAlign="center" sx={{ backgroundColor: "red", marginBottom: "10px" }}>どんなことができるのか？（未実装）</Typography>
           <Container maxWidth="sm">

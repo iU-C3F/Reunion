@@ -6,6 +6,12 @@ import { Principal } from "@dfinity/principal";
 import { AuthClient } from "@dfinity/auth-client";
 import { canisterId as IICanisterID }
   from 'declarations/internet_identity_div';
+import { InsertUser, User } from "types/user";
+import { makeUsersActor } from "ui/service/actor-locator";
+type Result = {
+  Ok: [Principal, User] | false;
+  Err: string | false;
+}
 
 export type AuthContextType = {
   isAuthenticated: boolean;
@@ -14,6 +20,10 @@ export type AuthContextType = {
   authClient: AuthClient | undefined;
   identity: Identity | null;
   principal: Principal | null;
+  user: User | undefined;
+  updateUser: (user: User) => void;
+  // usersValidationCheck: (queryType: string, principalID: Principal, insertUser: InsertUser) => Promise<Result>;
+  // users_insert: (principalID: Principal, insertUser: InsertUser) => Promise<[Principal, User] | []>;
 };
 
 const defaultAuthContext: AuthContextType = {
@@ -23,6 +33,10 @@ const defaultAuthContext: AuthContextType = {
   authClient: undefined,
   identity: null,
   principal: null,
+  user: undefined,
+  updateUser: () => { },
+  // usersValidationCheck: async () => Promise.resolve({ Ok: false, Err: "usersValidationCheck is not implemented" }),
+  // users_insert: async () => Promise.resolve([]),
 };
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
@@ -60,8 +74,8 @@ export const useAuthClient = (options = defaultOptions) => {
   const [authClient, setAuthClient] = useState<AuthClient>();
   const [identity, setIdentity] = useState<null | Identity>(null);
   const [principal, setPrincipal] = useState<null | Principal>(null);
-  const [createdAt, setCreatedAt] = useState<number>(0);
-  const [updatedAt, setUpdatedAt] = useState<number>(0);
+  const [user, setUser] = useState<User>();
+  // const usersActor = makeUsersActor();
 
   useEffect(() => {
     // Initialize AuthClient
@@ -71,7 +85,6 @@ export const useAuthClient = (options = defaultOptions) => {
   }, []);
 
   const login = () => {
-    console.log("start login")
     if (authClient) {
       authClient.login({
         ...options.loginOptions,
@@ -92,11 +105,34 @@ export const useAuthClient = (options = defaultOptions) => {
     const principal = identity.getPrincipal();
     setPrincipal(principal);
 
-    const createdAt = Date.now();
-    setCreatedAt(createdAt);
+    if (isAuthenticated) {
+      // ユーザー情報を保持している canisterに接続しユーザー情報の登録有無を確認
+      const usersActor = makeUsersActor();
+      const result = await usersActor.users_get(principal);
 
-    const updatedAt = Date.now();
-    setUpdatedAt(updatedAt);
+      // ユーザー情報が存在している場合はresultの配列に１つ情報が入っている。lengthがゼロの場合は登録なし
+      if (result.length > 0) {
+        const existUser: User = {
+          id: result[0].id,
+          isAuthenticated: result[0].isAuthenticated,
+          iconUrl: result[0].icon_url,
+          displayName: result[0].display_name,
+          userName: result[0].user_name,
+          selfIntroduction: result[0].self_introduction[0] || undefined,
+          homePageUrl: result[0].homepage_url[0] || undefined,
+          twitterUrl: result[0].twitter_url[0] || undefined,
+          youtubeUrl: result[0].youtube_url[0] || undefined,
+          tiktokUrl: result[0].tiktok_url[0] || undefined,
+          updatedAt: result[0].created_at,
+          createdAt: result[0].updated_at,
+        };
+        setUser(existUser);
+      } else {
+        setUser(undefined);
+      }
+    } else {
+      setUser(undefined);
+    }
 
     setAuthClient(client);
   }
@@ -108,6 +144,35 @@ export const useAuthClient = (options = defaultOptions) => {
     }
   }
 
+  async function updateUser(user: User) {
+    // await usersActor.users_update(user);
+    setUser(user);
+  }
+
+  // async function usersValidationCheck(queryType: string, principalID: Principal, insertUser: InsertUser) {
+  //   if (queryType === 'registe') {
+  //     let checkResult = await usersActor.users_registe_validation_check(principalID, insertUser);
+  //     if (checkResult.Ok) {
+  //       checkResult.Err = false;
+  //     } else if (checkResult.Err) {
+  //       checkResult.Ok = false;
+  //     }
+  //     return checkResult;
+  //   } else if (queryType === 'edit') {
+  //     let checkResult = await usersActor.users_update_validation_check(principalID, insertUser);
+  //     if (checkResult.Ok) {
+  //       checkResult.Err = false;
+  //     } else if (checkResult.Err) {
+  //       checkResult.Ok = false;
+  //     }
+  //     return checkResult;
+  //   }
+  // }
+
+  // async function users_insert(principalID: Principal, insertUser: InsertUser) {
+  //   return await usersActor.users_insert(principalID, insertUser);
+  // }
+
   return {
     isAuthenticated,
     login,
@@ -115,8 +180,10 @@ export const useAuthClient = (options = defaultOptions) => {
     authClient,
     identity,
     principal,
-    createdAt,
-    updatedAt,
+    user,
+    updateUser,
+    // usersValidationCheck,
+    // users_insert,
   }
 };
 

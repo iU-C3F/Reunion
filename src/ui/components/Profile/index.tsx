@@ -1,11 +1,6 @@
 import { useRouter } from 'next/router';
-import { useEffect, useLayoutEffect, useState } from 'react';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilState } from "recoil";
 
-import { User } from "types/user";
-import { setUserStates } from "states/setUserStates";
-import { localStorageUserState } from "states/localstorage";
-import { sessionStorageUserState } from "states/sessionstorage";
 import { inputProfileState } from 'states/inputProfileState';
 
 import { Avatar, Box, Button, Container, IconButton, Typography } from '@mui/material';
@@ -14,90 +9,41 @@ import YouTubeIcon from '@mui/icons-material/YouTube';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
 import { TikTokIcon } from "ui/components/TiktokIcon";
 
-import { Principal } from '@dfinity/principal';
-import { makeUsersActor } from '../../service/actor-locator';
-
 import RegisterFrom from './RegisterForm';
 import Auth from '../Auth';
+import { useAuth } from 'hooks/auth';
+import { toast } from 'react-hot-toast';
 
 function Profile() {
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const setLocalUser = useSetRecoilState(localStorageUserState);
-  const setSessionUser = useSetRecoilState(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
 
   const [input, setInput] = useRecoilState(inputProfileState);// EditFormに現在のプロフィール情報を引き継ぐためのState
   function goToEdit() {
-    setInput((currentInput) => ({
-      ...currentInput,
-      ...{
-        iconUrl: (isUser as User).iconUrl as string,
-        displayName: (isUser as User).displayName as string,
-        userName: (isUser as User).userName as string,
-        selfIntroduction: (isUser as User).selfIntroduction || undefined,
-        homePageUrl: (isUser as User).homePageUrl || undefined,
-        twitterUrl: (isUser as User).twitterUrl || undefined,
-        youtubeUrl: (isUser as User).youtubeUrl || undefined,
-        tiktokUrl: (isUser as User).tiktokUrl || undefined,
-      }
-    }))
-    router.push('/profile/edit');
-  }
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, []);
-
-  // ログイン状態、会員登録状態をチェックしてリダイレクト処理
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isClient, isLocalUser, isSessionUser, setUser, setEnv]);
-
-  // ユーザー情報を保持している canisterに接続しユーザー情報の登録有無を確認
-  useEffect(() => {
-    (async () => {
-      if (isUser && isUser.id && !isUser.userName) {
-        const usersActor = makeUsersActor();
-        // principal をkeyとしてユーザー情報を取得
-        const principalID = Principal.fromText(isUser.id as string);
-        const result = await usersActor.users_get(principalID);
-        // ユーザー情報が存在している場合はresultの配列に１つ情報が入っている。lengthがゼロの場合は登録なし
-        if (result.length > 0) {
-          console.log('exist user! result[0]: ', result[0]);
-          const appUser: User = {
-            identity: isUser.identity,
-            id: isUser.id,
-            isAuthenticated: isUser.isAuthenticated,
-            iconUrl: result[0].icon_url,
-            displayName: result[0].display_name,
-            userName: result[0].user_name,
-            selfIntroduction: result[0].self_introduction[0] || undefined,
-            homePageUrl: result[0].homepage_url[0] || undefined,
-            twitterUrl: result[0].twitter_url[0] || undefined,
-            youtubeUrl: result[0].youtube_url[0] || undefined,
-            tiktokUrl: result[0].tiktok_url[0] || undefined,
-            updatedAt: Number(result[0].created_at),
-            createdAt: Number(result[0].updated_at),
-          }
-          console.log('appUser: ', appUser);
-          setLocalUser(appUser);
-          setSessionUser(appUser);
+    if (user) {
+      setInput((currentInput) => ({
+        ...currentInput,
+        ...{
+          iconUrl: user.iconUrl as string,
+          displayName: user.displayName as string,
+          userName: user.userName as string,
+          selfIntroduction: user.selfIntroduction || undefined,
+          homePageUrl: user.homePageUrl || undefined,
+          twitterUrl: user.twitterUrl || undefined,
+          youtubeUrl: user.youtubeUrl || undefined,
+          tiktokUrl: user.tiktokUrl || undefined,
         }
-      }
-    })()
-  }, [isUser]);
+      }))
+      router.push('/profile/edit');
+    } else {
+      let notifyError = () => toast.error('プロファイル情報の取得に失敗しました。画面を更新して再度お試しください。', { position: "top-right", duration: 3000 });
+      notifyError();
+    }
+  }
 
   return (
     <>
-      {isUser?.userName ? (
+      {isAuthenticated && user && user.userName ? (
         <Container maxWidth="sm" sx={{ direction: "column", flex: '1' }}>
           <Box sx={{ height: '20px' }} />{/* Avatar要素の表示位置調整用 */}
           <Box sx={{ display: 'grid', justifyContent: 'right' }} >
@@ -112,16 +58,16 @@ function Profile() {
               margin: 1
             }}
           >
-            <Avatar src={isUser.iconUrl} sx={{ width: 120, height: 120, zIndex: 1, }} />
+            <Avatar src={user.iconUrl} sx={{ width: 120, height: 120, zIndex: 1, }} />
             <Typography variant="h6" style={{ textAlign: 'center' }}>
-              <strong>{isUser.displayName}</strong>
+              <strong>{user.displayName}</strong>
             </Typography>
             <Typography variant='body1' color='gray' style={{ textAlign: 'center' }}>
-              @{isUser.userName}
+              @{user.userName}
             </Typography>
           </Box>
           <Typography variant='body2' style={{ whiteSpace: 'pre-wrap', margin: 10 }}>
-            {isUser.selfIntroduction ? (isUser.selfIntroduction) : ("")}
+            {user.selfIntroduction ? (user.selfIntroduction) : ("")}
           </Typography>
           {/* HomePage、Tiwtter、Youtube、Tiktok リンク先 */}
           <Box
@@ -132,23 +78,23 @@ function Profile() {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-            {isUser.homePageUrl ? (
-              <IconButton href={isUser.homePageUrl} target="_blank" rel="noopener noreferrer" aria-label="Home Page">
+            {user.homePageUrl ? (
+              <IconButton href={user.homePageUrl} target="_blank" rel="noopener noreferrer" aria-label="Home Page">
                 <InsertLinkIcon style={{ rotate: '135deg' }} />
               </IconButton>
             ) : ("")}
-            {isUser.twitterUrl ? (
-              <IconButton href={isUser.twitterUrl} target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+            {user.twitterUrl ? (
+              <IconButton href={user.twitterUrl} target="_blank" rel="noopener noreferrer" aria-label="Twitter">
                 <TwitterIcon />
               </IconButton>
             ) : ("")}
-            {isUser.youtubeUrl ? (
-              <IconButton href={isUser.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label="Youtube" >
+            {user.youtubeUrl ? (
+              <IconButton href={user.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label="Youtube" >
                 <YouTubeIcon />
               </IconButton>
             ) : ("")}
-            {isUser.tiktokUrl ? (
-              <IconButton href={isUser.tiktokUrl} target="_blank" rel="noopener noreferrer" aria-label="Tiktok">
+            {user.tiktokUrl ? (
+              <IconButton href={user.tiktokUrl} target="_blank" rel="noopener noreferrer" aria-label="Tiktok">
                 <TikTokIcon color='gray' width="25px" />
               </IconButton>
             ) : ("")}

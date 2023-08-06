@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
   Box,
@@ -25,38 +25,16 @@ import { styled } from '@mui/material/styles';
 import Link from 'ui/Link';
 import ThemeColorMode from 'ui/components/ThemeColorMode';
 
-import { useRecoilValue } from 'recoil';
-import { User } from 'types/user';
-import { setUserStates } from 'states/setUserStates';
-import { localStorageUserState } from 'states/localstorage';
-import { sessionStorageUserState } from 'states/sessionstorage';
-
 import { usePageTitle } from 'hooks/usePageTitle';
+import { useAuth } from 'hooks/auth';
 
 const defaultIcon = "https://static.wixstatic.com/media/419337_9e56d460d67b4b708252f32e8448c2ff~mv2.png/v1/fill/w_144,h_144,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/C3F%20(1).png"
 
 function header() {
+  const { user } = useAuth();
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const drawerWidth = 240;
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, []);
-
-  // isLocalUser, isSessionUser が更新された場合はアイコンを再読み込みする必要があるのでuseEffectで状態監視する
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isLocalUser, isSessionUser]);
 
   /*
   * @params string => 渡した文字列がページタイトルとして設定される
@@ -76,11 +54,15 @@ function header() {
     },
   }));
 
-  const notificationNumber = 1;
+  let notificationNumber = 0;
+  /* TODO: 
+  * notificationNumberにお知らせの数をカウントアップする処理を入れる
+  */
+
   const drawer = (
     <Box onClick={handleDrawerToggle}>
       <Badge badgeContent={notificationNumber} color="error" style={{ marginTop: '15px', marginLeft: '5px' }}>
-        <Avatar src={isUser && isUser.iconUrl ? isUser.iconUrl : defaultIcon} style={{ display: 'flax' }} />
+        <Avatar src={user && user.iconUrl ? user.iconUrl : defaultIcon} style={{ display: 'flax' }} />
       </Badge>
       <Typography variant="caption" display="block" sx={{ textAlign: 'left', marginLeft: '5px', marginTop: '2px' }} gutterBottom>@sho-t</Typography>
       <List sx={{ marginLeft: '5px' }}>
@@ -112,7 +94,7 @@ function header() {
           <Box component="span" sx={{ flexDirection: 'row-reverse' }}>
             <Tooltip title="Open settings">
               <IconButton sx={{ p: 0 }} onClick={handleDrawerToggle}>
-                <Avatar src={isUser && isUser.iconUrl ? isUser.iconUrl : defaultIcon} id="avatar" style={{ display: 'flax' }} />
+                <Avatar src={user && user.iconUrl ? user.iconUrl : defaultIcon} id="avatar" style={{ display: 'flax' }} />
               </IconButton>
             </Tooltip>
           </Box>

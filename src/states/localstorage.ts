@@ -18,7 +18,6 @@ const localStorageUserEffect = (key: string) => ({ setSelf, onSet }: any) => {
 export const localStorageUserState = atom<User>({
   key: "isLocalUser",
   default: {
-    identity: undefined,
     id: undefined,
     iconUrl: undefined,
     displayName: undefined,

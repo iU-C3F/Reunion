@@ -24,5 +24,6 @@ service : {
   users_registe_validation_check : (principal, User) -> (Result) query;
   users_remove : (principal) -> (opt User);
   users_update_validation_check : (principal, User) -> (Result) query;
+  users_user_name_duplicate_check : (text) -> (bool) query;
   users_values : () -> (vec User) query;
 }

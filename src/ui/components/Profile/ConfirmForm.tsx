@@ -1,25 +1,30 @@
 import { useRouter } from "next/router";
-import { useEffect, useLayoutEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
-import { Avatar, Box, Button, Container, IconButton, Typography } from "@mui/material";
+import { Avatar, Box, Button, Container, IconButton, Typography, fabClasses } from "@mui/material";
 import TwitterIcon from '@mui/icons-material/Twitter';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
 import { TikTokIcon } from "ui/components/TiktokIcon";
 
 import { User, InsertUser, inputProfileForm } from "types/user";
-import { setUserStates } from "states/setUserStates";
 import { inputProfileState } from 'states/inputProfileState';
-import { localStorageUserState } from "states/localstorage";
-import { sessionStorageUserState } from "states/sessionstorage";
+
 
 import { Principal } from '@dfinity/principal';
-import { makeUsersActor } from '../../service/actor-locator';
+import { useAuth } from "hooks/auth";
+import { makeUsersActor } from "ui/service/actor-locator";
+type validationCheckResult = {
+  'Ok': [Principal, User] | false,
+  'Err': string | false,
+};
+
+type insertUserResult = [User] | [];
 
 function ConfirmForm() {
+  const { isAuthenticated, principal, user, updateUser } = useAuth();
   const router = useRouter();
 
   // URLのqueryにtypeが含まれない。またはtypeが不正の場合は手打ちでアクセスしている。正しい遷移では無いので、前のページに強制的に戻す
@@ -68,34 +73,76 @@ function ConfirmForm() {
 
   const [input, setInput] = useRecoilState(inputProfileState);// 入力されたFormの情報を一時保存するState
   const inputProfileData = useRecoilValue(inputProfileState);
-  const setLocalUser = useSetRecoilState(localStorageUserState);
-  const setSessionUser = useSetRecoilState(sessionStorageUserState);
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
 
   const { handleSubmit } = useForm<inputProfileForm>();
   let notifyError = () => toast.error('データの送信に失敗しました😢\n少し待ってからリトライしてください', { position: "top-right", duration: 4000 });
 
   const notifySuccess = () => toast.success(successMessage, { position: "top-right", duration: 4000 });
 
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isClient, isUser, isLocalUser, isSessionUser, isEnv]);
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
-
-
   function previous() {
     setInput(inputProfileData);
     router.back();
   }
 
+  const usersActor = makeUsersActor();
+
+  async function usersValidationCheck(
+    queryType: string,
+    principalID: Principal,
+    insertUser: InsertUser,
+  ) {
+    let checkResult: validationCheckResult = { 'Ok': false, 'Err': false };
+    if (queryType === 'registe') {
+      checkResult = await usersActor.users_registe_validation_check(principalID, insertUser);
+      if (checkResult.Ok) {
+        checkResult.Err = false;
+      } else if (checkResult.Err) {
+        checkResult.Ok = false;
+      }
+    } else if (queryType === 'edit') {
+      checkResult = await usersActor.users_update_validation_check(principalID, insertUser);
+      if (checkResult.Ok) {
+        checkResult.Err = false;
+      } else if (checkResult.Err) {
+        checkResult.Ok = false;
+      }
+    }
+    return checkResult;
+  }
+
+  async function users_insert(principalID: Principal, insertUser: InsertUser) {
+    const result: insertUserResult = await usersActor.users_insert(principalID, insertUser);
+    console.log('inner function users_insert. result: ', result);
+    return result;
+  }
+
   const onSubmit: SubmitHandler<inputProfileForm> = async (data) => {
+    if (!isAuthenticated) {
+      setTimeout(function () {
+        router.push("/profile");
+      }, 3 * 1000);
+      return (
+        <>
+          <Box
+            sx={{
+              my: 4,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              margin: 0
+            }}
+          >
+            <Box sx={{ height: '80px' }} />
+            <Typography variant="h6" color="gray" style={{ textAlign: 'center' }}>
+              <strong>ログアウト状態です。ログインして再度お試しください。</strong>
+            </Typography>
+          </Box>
+        </>
+      );
+    }
+
+    console.log('inner onSubmit');
+
     // ボタン要素を取得して非活性にする
     const submitButtonElement = document.querySelector('button[type="submit"]') as HTMLButtonElement;
     submitButtonElement.innerText = '送信中';
@@ -104,14 +151,10 @@ function ConfirmForm() {
     submitButtonElement.style.backgroundColor = 'silver';
     // =========================
 
+    const principalID = principal as Principal;
     // 登録対象のユーザー情報をオブジェクト化
-    console.log('inner onSubmit');
-    const tmpUser = isUser || isLocalUser || isSessionUser;
-    console.log('inner onSubmit tmpUser: ', tmpUser);
-    const principalID = Principal.fromText(tmpUser.id as string);
-    console.log('inner onSubmit principalID: ', principalID);
     const insertUser: InsertUser = {
-      id: principalID as Principal,
+      id: principalID,
       icon_url: inputProfileData.iconUrl as string,
       display_name: inputProfileData.displayName as string,
       user_name: inputProfileData.userName as string,
@@ -126,87 +169,66 @@ function ConfirmForm() {
     }
     // =========================
 
-    // backendキャニスターのインスタンスを取得
-    const usersActor = makeUsersActor();
-    // =========================
+    if (router.query.type === 'registe' || router.query.type === 'edit') {
+      // 登録を実行する前に、登録内容に不正が無いかチェック（登録済チェック、登録容量チェック）
+      const validationCheckResult = await usersValidationCheck(router.query.type, principalID, insertUser);
 
-    // 登録を実行する前に、登録内容に不正が無いかチェック（登録済チェック、登録容量チェック）
-    let validationCheckResult;
-    if (router.query.type === 'registe') {
-      validationCheckResult = await usersActor.users_registe_validation_check(principalID, insertUser);
-    } else if (router.query.type === 'edit') {
-      validationCheckResult = await usersActor.users_update_validation_check(principalID, insertUser);
-    }
-
-    console.log('validationCheckResult: ', validationCheckResult);
-    if (validationCheckResult.Err) {
-      // 登録情報に不正があった場合はここに入ってくる
-      console.log('validationCheckResult.Err: ', validationCheckResult.Err);
-      // エラーメッセージを日本語に置換
-      let error_msg = validationCheckResult.Err;
-      error_msg = error_msg.replace('already registered.', '登録済のIDです\n登録情報を修正してください\n');
-      error_msg = error_msg.replace('registration does not exist. ', '未登録のIDです\n登録情報を修正してください\n');
-      error_msg = error_msg.replace(/Key is too large\. Expected \<\= \d* bytes\, found \d* bytes\. /i, 'プリンシパルIDが不正です\n登録情報を修正してください\n');
-      error_msg = error_msg.replace(/Value is too large\. Expected \<\= \d* bytes\, found \d* bytes\. /i, '文字数が容量を超えています。\n登録情報を修正してください\n');
-      notifyError = () => toast.error(error_msg, { position: "top-right", duration: 4000 });
-      notifyError();
-      // 3秒後にprofileページへリダイレクト
-      setTimeout(function () {
-        router.back();
-      }, 3 * 1000);
-    } else {
-      // validationCheckでErrorが無い場合は登録を行う
-      // 登録成功の場合=>insertResultに空配列[]が格納される
-      // 登録失敗の場合=>insertResult.Errにエラーメッセージが格納される
-      const insertResult = await usersActor.users_insert(principalID, insertUser);
-      console.log('inner function insertResult: ', insertResult);
-      if (!insertResult.Err) {
-        // ユーザー情報の登録に成功した場合
-        notifySuccess();
-        console.log('registe success!', insertResult);
-
-        const appUser: User = {
-          identity: tmpUser.identity,
-          id: tmpUser.id,
-          isAuthenticated: tmpUser.isAuthenticated,
-          iconUrl: insertUser.icon_url,
-          displayName: insertUser.display_name,
-          userName: insertUser.user_name,
-          selfIntroduction: insertUser.self_introduction[0] || undefined,
-          homePageUrl: insertUser.homepage_url[0] || undefined,
-          twitterUrl: insertUser.twitter_url[0] || undefined,
-          youtubeUrl: insertUser.youtube_url[0] || undefined,
-          tiktokUrl: insertUser.tiktok_url[0] || undefined,
-          updatedAt: insertUser.created_at,
-          createdAt: insertUser.updated_at,
-        }
-        console.log('appUser: ', appUser);
-        setLocalUser(appUser);
-        setSessionUser(appUser);
+      if (validationCheckResult.Err) {
+        // 登録情報に不正があった場合はここに入ってくる
+        console.log('validationCheckResult.Err: ', validationCheckResult.Err);
+        // エラーメッセージを日本語に置換
+        let error_msg = validationCheckResult.Err;
+        error_msg = error_msg.replace('already registered.', '登録済のIDです\n登録情報を修正してください\n');
+        error_msg = error_msg.replace('registration does not exist. ', '未登録のIDです\n登録情報を修正してください\n');
+        error_msg = error_msg.replace(/Key is too large\. Expected \<\= \d* bytes\, found \d* bytes\. /i, 'プリンシパルIDが不正です\n登録情報を修正してください\n');
+        error_msg = error_msg.replace(/Value is too large\. Expected \<\= \d* bytes\, found \d* bytes\. /i, '文字数が容量を超えています。\n登録情報を修正してください\n');
+        error_msg = error_msg.replace('user_name is already in use. ', 'このユーザー名は既に使用されています\nユーザー名を変更してください');
+        notifyError = () => toast.error(error_msg, { position: "top-right", duration: 4000 });
+        notifyError();
         // 3秒後にprofileページへリダイレクト
         setTimeout(function () {
-          router.push("/profile");
+          router.back();
         }, 3 * 1000);
       } else {
-        // ユーザー情報の登録に成功した場合
-        if (insertResult.Err) {
-          // エラーメッセージがあれば表示してプロフィールページにリダイレクトする
-          const error_msg = insertResult.Err;
-          console.log('result error_msg... ', error_msg);
-          notifyError = () => toast.error(error_msg, { position: "top-right", duration: 4000 });
-          notifyError();
-          // 4秒後にprofileページへリダイレクト
+        /* validationCheckでErrorが無い場合は登録を行う
+        * 登録成功の場合=>insertResultに空配列[]または[user]が格納される
+        *** users_insert関数の内部で使用されているinsert関数はuser情報の更新時にも使用されていて、
+        *** 新規時は[]がreturnされ、更新時は[user]がreturnされる
+        * 登録失敗の場合=>insertResult.Errにエラーメッセージが格納される
+        */
+        const insertResult = await users_insert(principalID, insertUser);
+        if (
+          (router.query.type === 'registe' && insertResult.length === 0)
+          || (router.query.type === 'edit' && insertResult.length === 1)
+        ) {
+          // ユーザー情報の登録に成功した場合
+          notifySuccess();
+          console.log('registe success!', insertResult);
+
+          const user: User = {
+            id: principalID,
+            isAuthenticated: isAuthenticated,
+            iconUrl: insertUser.icon_url,
+            displayName: insertUser.display_name,
+            userName: insertUser.user_name,
+            selfIntroduction: insertUser.self_introduction[0] || undefined,
+            homePageUrl: insertUser.homepage_url[0] || undefined,
+            twitterUrl: insertUser.twitter_url[0] || undefined,
+            youtubeUrl: insertUser.youtube_url[0] || undefined,
+            tiktokUrl: insertUser.tiktok_url[0] || undefined,
+            updatedAt: insertUser.created_at,
+            createdAt: insertUser.updated_at,
+          }
+          console.log('user: ', user);
+          updateUser(user);
+          // 3秒後にprofileページへリダイレクト
           setTimeout(function () {
             router.push("/profile");
-          }, 4 * 1000);
+          }, 3 * 1000);
         } else {
           // エラー内容が不明な場合はデフォルトで設定した「データの送信に失敗しました~」エラーメッセージを表示し、前のページに戻す
-          console.log('An unknown error has occurred...');
+          console.log('Faild insert user data. insertResult: ', insertResult);
           notifyError();
-          // 4秒後にprofileページへリダイレクト
-          setTimeout(function () {
-            router.push("/profile");
-          }, 4 * 1000);
         }
       }
     }

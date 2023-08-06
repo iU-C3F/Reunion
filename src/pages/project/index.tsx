@@ -1,6 +1,3 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
-import dynamic from 'next/dynamic'
-
 import {
   Box,
   Container,
@@ -8,35 +5,13 @@ import {
   Button,
 } from '@mui/material';
 
-import { useRecoilValue } from 'recoil';
-import { localStorageUserState } from 'states/localstorage';
-import { sessionStorageUserState } from 'states/sessionstorage';
-
-import { User } from 'types/user';
-import { setUserStates } from 'states/setUserStates';
 import { useAuth } from 'hooks/auth';
 
+import dynamic from 'next/dynamic'
 const Projects = dynamic(async () => await import('ui/components/Projects'), { ssr: false })
 
 export default function Hello() {
-  const { isAuthenticated, principal } = useAuth();
-  console.log("principal:", principal?.toText());
-
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
-
-  () => (setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv));
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isLocalUser, isSessionUser]);
+  const { isAuthenticated } = useAuth();
 
   return (
     <Container maxWidth="lg">

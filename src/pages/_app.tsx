@@ -24,6 +24,8 @@ interface MyAppProps extends AppProps<{ session: Session }> {
   Component: NextComponentType & { requireAuth?: boolean };
 }
 
+import { useRouter } from "next/router";
+
 export default function MyApp({
   Component,
   emotionCache = clientSideEmotionCache,
@@ -32,6 +34,7 @@ export default function MyApp({
   // >>> setting theme
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: light)');
   const [mode, setMode] = useState<'dark' | 'light'>(prefersDarkMode ? 'dark' : 'light');
+  const router = useRouter();
 
   const colorMode = {
     toggleColorMode: () => {
@@ -50,6 +53,23 @@ export default function MyApp({
       }
     })
   );
+
+  if (router.pathname.indexOf("/project") !== -1) {
+    if (theme.palette.mode === "dark") {
+      theme.palette.background.default = "#222222";
+      theme.palette.background.paper = "#333333"
+    } else {
+      theme.palette.background.default = "#E0FFFF";
+    }
+  } else {
+    if (theme.palette.mode === "dark") {
+      theme.palette.background.default = "#222222";
+    } else {
+      theme.palette.background.default = "#FFFAFA";
+    }
+  }
+
+
   // <<< setting theme
 
   return (

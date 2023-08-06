@@ -4,8 +4,14 @@ export const usePageTitle = (path: string) => {
     case '/group':
       title = 'Group';
       break;
-    case '/portal':
-      title = 'ポータル';
+    case '/project':
+      title = 'プロジェクト';
+      break;
+    case '/project/create':
+      title = 'プロジェクト作成';
+      break;
+    case '/project/confirm':
+      title = 'プロジェクト作成確認';
       break;
     case '/apps':
       title = 'アプリ';

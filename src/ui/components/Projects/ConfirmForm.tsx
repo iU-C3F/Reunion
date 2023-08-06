@@ -112,7 +112,7 @@ function ConfirmForm() {
       console.log('registe success!', insertResult);
       // 3秒後にprofileページへリダイレクト
       setTimeout(function () {
-        router.push("/portal");
+        router.push("/project");
       }, 3 * 1000);
     } else {
       // プロジェクト作成に失敗した場合

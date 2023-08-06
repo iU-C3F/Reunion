@@ -1,11 +1,3 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
-
-import { User } from 'types/user';
-import { useRecoilValue } from 'recoil';
-import { localStorageUserState } from 'states/localstorage';
-import { sessionStorageUserState } from 'states/sessionstorage';
-
-import { setUserStates } from 'states/setUserStates';
 import { Box, Container, Grid, Stack, Theme, Typography } from '@mui/material';
 
 import Auth from 'ui/components/Auth';
@@ -15,22 +7,6 @@ import { useAuth } from 'hooks/auth';
 const defaultIcon = "/Reunion10.png"
 
 export default function Home() {
-  const { login, identity, principal } = useAuth();
-  const [isClient, setIsClient] = useState(false);
-  const isLocalUser = useRecoilValue<User>(localStorageUserState);
-  const isSessionUser = useRecoilValue<User>(sessionStorageUserState);
-  const [isUser, setUser] = useState<User>();
-  const [isEnv, setEnv] = useState("");
-
-  () => (setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv));
-
-  useLayoutEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    setUserStates(isClient, isLocalUser, isSessionUser, setUser, setEnv);
-  }, [isLocalUser, isSessionUser]);
 
   return (
     <>
